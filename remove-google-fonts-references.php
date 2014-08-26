@@ -5,14 +5,23 @@ Plugin URI: http://www.brunoxu.com/remove-google-fonts-references.html
 Description: Remove Open Sans and other google fonts references from all pages.
 Author: Bruno Xu
 Author URI: http://www.brunoxu.com/
-Version: 1.0
+Version: 1.1
+License: GPL
 */
+
+function gf_is_login_page() {
+	return in_array($GLOBALS['pagenow'], array('wp-login.php', 'wp-register.php'));
+}
 
 if (is_admin()) {
 	$action = 'admin_init';
+} elseif (gf_is_login_page()) {
+	$action = 'init'; // OK
+	//$action = 'wp'; // NG
 } else {
 	$action = 'get_header';
 }
+
 add_action($action, 'remove_google_fonts_obstart');
 function remove_google_fonts_obstart() {
 	ob_start('remove_google_fonts_obend');

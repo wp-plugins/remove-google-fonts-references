@@ -4,7 +4,7 @@ Donate link: http://www.brunoxu.com/
 Tags: Open Sans, Google Fonts, Google Web Fonts, Remove Google Fonts, Disable Google Fonts
 Requires at least: 3.0
 Tested up to: 3.9.2
-Stable tag: 1.0
+Stable tag: trunk
 
 Remove Open Sans and other google fonts references from all pages.
 
@@ -24,6 +24,10 @@ Remove Google Fonts References is a very lightweight, it has no settings, just a
 2. Activate the plugin through the 'Plugins' menu in WordPress background.
 
 == Changelog ==
+
+= 1.1 =
+* 2014-08-26
+* Cover login and register page.
 
 = 1.0 =
 * 2014-08-19
