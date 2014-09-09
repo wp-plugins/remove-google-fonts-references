@@ -25,6 +25,11 @@ Remove Google Fonts References is a very lightweight, it has no settings, just a
 
 == Changelog ==
 
+= 1.2 =
+* 2014-09-10
+* Cover another reference method like '@import url(...)'.
+* Optimized action hooks.
+
 = 1.1 =
 * 2014-08-26
 * Cover login and register page.
