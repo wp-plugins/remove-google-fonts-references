@@ -25,6 +25,11 @@ Remove Google Fonts References is a very lightweight, it has no settings, just a
 
 == Changelog ==
 
+= 2.0 =
+* 2014-09-17
+* Remove google fonts references inside css files.
+* Add plugin activation handler and uninstall handler.
+
 = 1.2 =
 * 2014-09-10
 * Cover another reference method like '@import url(...)'.

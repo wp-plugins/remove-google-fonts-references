@@ -1,16 +1,25 @@
-<?php
+<?php if (!defined('ABSPATH')) exit;
 /*
 Plugin Name: Remove Google Fonts References
 Plugin URI: http://www.brunoxu.com/remove-google-fonts-references.html
 Description: Remove Open Sans and other google fonts references from all pages.
 Author: Bruno Xu
 Author URI: http://www.brunoxu.com/
-Version: 1.2
+Version: 2.0
 License: GNU General Public License v2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 */
 
-function gf_is_login_page() {
+define('REMOVE_GOOGLE_FONTS_PLUGIN_URL', plugin_dir_url( __FILE__ ));
+define('REMOVE_GOOGLE_FONTS_PLUGIN_DIR', plugin_dir_path( __FILE__ ));
+define('REMOVE_GOOGLE_FONTS_PLUGIN_CACHE_URL', REMOVE_GOOGLE_FONTS_PLUGIN_URL.'cache/');
+define('REMOVE_GOOGLE_FONTS_PLUGIN_CACHE_DIR', REMOVE_GOOGLE_FONTS_PLUGIN_DIR.'cache/');
+if (! file_exists(REMOVE_GOOGLE_FONTS_PLUGIN_DIR)) mkdir(REMOVE_GOOGLE_FONTS_PLUGIN_DIR, 0755, true);
+
+include_once REMOVE_GOOGLE_FONTS_PLUGIN_DIR.'config.php';
+
+
+function remove_google_fonts_is_login_page() {
 	return in_array($GLOBALS['pagenow'], array('wp-login.php', 'wp-register.php'));
 }
 
@@ -18,7 +27,7 @@ if (is_admin()) {
 	//$action = 'admin_head'; // NG
 	$action = 'admin_init'; // OK
 	//$action = 'wp'; // NG
-} elseif (gf_is_login_page()) {
+} elseif (remove_google_fonts_is_login_page()) {
 	//$action = 'wp'; // NG
 	//$action = 'init'; // OK
 	$action = 'wp_loaded'; // OK
@@ -28,7 +37,7 @@ if (is_admin()) {
 
 add_action($action, 'remove_google_fonts_obstart');
 function remove_google_fonts_obstart() {
-	ob_start('remove_google_fonts_obend');
+	ob_start('remove_google_fonts_obend', 4096, PHP_OUTPUT_HANDLER_STDFLAGS);
 }
 
 function remove_google_fonts_obend($content) {
@@ -58,6 +67,47 @@ function remove_google_fonts_filter($content)
 		$content
 	);
 
+
+	/*
+	inside css files like:
+	http://www.xxxxxx.com/wp-content/plugins/pricing-table/css/site/tipTip.css?ver=4.0
+		@import url("http://fonts.googleapis.com/css?family=Pathway+Gothic+One|Roboto+Slab");
+	http://www.xxxxxx.com/wp-content/themes/voyager/framework/assets/admin/css/admin.css?ver=3.9.2
+		@import url(http://fonts.googleapis.com/css?family=Open+Sans:400italic,300,400,700);
+	*/
+	$regexp = "/<link[^<>]+href=['\"]([^'\"]+)['\"][^<>]*>/i";
+
+	global $remove_google_fonts_cssfiles;
+	$remove_google_fonts_cssfiles = remove_google_fonts_get_config('cssfiles');
+	if ($remove_google_fonts_cssfiles === FALSE) {
+		$remove_google_fonts_cssfiles = array();
+
+		preg_match_all($regexp, $content, $matches);
+
+		if (!empty($matches) && !empty($matches[0])) {
+			foreach ($matches[1] as $ind=>$match) {
+				if (stripos($matches[0][$ind], 'stylesheet') === FALSE) {//'text/css'
+					continue;
+				}
+
+				$cssfile = $match;
+
+				remove_google_fonts_cache_cssfile($cssfile, $remove_google_fonts_cssfiles);
+			}
+		}
+
+		global $remove_google_fonts_configs;
+		//$remove_google_fonts_configs['cssfiles'.'_expire_at'] = time()+86400*180;
+		$remove_google_fonts_configs['cssfiles'] = $remove_google_fonts_cssfiles;
+		update_option('remove_google_fonts_configs', $remove_google_fonts_configs);
+	}
+
+	$content = preg_replace_callback(
+		$regexp,
+		"remove_google_fonts_css_file_handler",
+		$content
+	);
+
 	return $content;
 }
 
@@ -71,3 +121,92 @@ function remove_google_fonts_str_handler($matches)
 		return '';
 	}
 }
+
+function remove_google_fonts_css_file_handler($matches)
+{
+	global $remove_google_fonts_cssfiles;
+
+	$str = $matches[0];
+	$cssfile = $matches[1];
+
+	if (stripos($str, 'stylesheet') === FALSE) {//'text/css'
+		return $str;
+	}
+
+	if (empty($remove_google_fonts_cssfiles)) {
+		return $str;
+	}
+
+	$key = strtolower(md5(strtolower($cssfile)));
+	if (!isset($remove_google_fonts_cssfiles[$key])) {
+		remove_google_fonts_cache_cssfile($cssfile, $remove_google_fonts_cssfiles);
+
+		global $remove_google_fonts_configs;
+		$remove_google_fonts_configs['cssfiles'] = $remove_google_fonts_cssfiles;
+		update_option('remove_google_fonts_configs', $remove_google_fonts_configs);
+
+		if (!empty($remove_google_fonts_cssfiles[$key])) {
+			$new_cssfile = $remove_google_fonts_cssfiles[$key];
+			return str_ireplace($cssfile, $new_cssfile, $str);
+		}
+
+		return $str;
+	} elseif (!empty($remove_google_fonts_cssfiles[$key])) {
+		$new_cssfile = $remove_google_fonts_cssfiles[$key];
+		return str_ireplace($cssfile, $new_cssfile, $str);
+	} else {
+		return $str;
+	}
+}
+
+/* match all conditions | only match files in plugins and themes dir */
+function remove_google_fonts_cache_cssfile($cssfile, &$remove_google_fonts_cssfiles)
+{
+	$regexp = "/@import\s+url\([^\(\)]+fonts.googleapis.com[^\(\)]+\);?/i";
+
+	$key = strtolower(md5(strtolower($cssfile)));
+	$remove_google_fonts_cssfiles[$key] = '';
+
+	$pass = FALSE;
+	if ($cssfile[0] == '/' && $cssfile[1] == '/') {
+		$cssfile_fullpath = (is_ssl()?'https:':'http:') . $cssfile;
+	} elseif ($cssfile[0] == '/') {
+		$cssfile_fullpath = home_url() . $cssfile;
+	} elseif (stripos($cssfile, 'http') === 0) {
+		$cssfile_fullpath = $cssfile;
+	} elseif ($cssfile[0] == '.') {
+		$pass = TRUE;
+	} else {
+		$pass = TRUE;
+	}
+	if (!$pass && !empty($cssfile_fullpath)) {
+		$filecontent = file_get_contents($cssfile_fullpath);
+
+		if ($filecontent === FALSE) {
+			unset($remove_google_fonts_cssfiles[$key]);
+		} else {
+			if (preg_match($regexp, $filecontent)) {
+				$filecontent = preg_replace($regexp, '', $filecontent);
+
+				$new_cssfile_path = REMOVE_GOOGLE_FONTS_PLUGIN_CACHE_DIR . $key . '.css';
+				$new_cssfile_url = REMOVE_GOOGLE_FONTS_PLUGIN_CACHE_URL . $key . '.css';
+				$handle = fopen($new_cssfile_path, 'w+');
+				fwrite($handle, $filecontent);
+				fclose($handle);
+
+				$remove_google_fonts_cssfiles[$key] = $new_cssfile_url;
+			}
+		}
+	}
+}
+
+
+function remove_google_fonts_activate() {
+	add_option( 'remove_google_fonts_configs', array() );
+}
+register_activation_hook( __FILE__, 'remove_google_fonts_activate' );
+
+function remove_google_fonts_uninstall() {
+	delete_option( 'remove_google_fonts_configs' );
+}
+register_uninstall_hook( __FILE__, 'remove_google_fonts_uninstall' );
