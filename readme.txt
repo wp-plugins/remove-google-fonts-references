@@ -25,6 +25,10 @@ Remove Google Fonts References is a very lightweight, it has no settings, just a
 
 == Changelog ==
 
+= 2.1 =
+* 2014-09-17
+* fix bug: can't load resources defined in the cached css files with relative path.
+
 = 2.0 =
 * 2014-09-17
 * Remove google fonts references inside css files.

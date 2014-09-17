@@ -5,7 +5,7 @@ Plugin URI: http://www.brunoxu.com/remove-google-fonts-references.html
 Description: Remove Open Sans and other google fonts references from all pages.
 Author: Bruno Xu
 Author URI: http://www.brunoxu.com/
-Version: 2.0
+Version: 2.1
 License: GNU General Public License v2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 */
@@ -141,9 +141,11 @@ function remove_google_fonts_css_file_handler($matches)
 	if (!isset($remove_google_fonts_cssfiles[$key])) {
 		remove_google_fonts_cache_cssfile($cssfile, $remove_google_fonts_cssfiles);
 
-		global $remove_google_fonts_configs;
-		$remove_google_fonts_configs['cssfiles'] = $remove_google_fonts_cssfiles;
-		update_option('remove_google_fonts_configs', $remove_google_fonts_configs);
+		if (isset($remove_google_fonts_cssfiles[$key])) {
+			global $remove_google_fonts_configs;
+			$remove_google_fonts_configs['cssfiles'] = $remove_google_fonts_cssfiles;
+			update_option('remove_google_fonts_configs', $remove_google_fonts_configs);
+		}
 
 		if (!empty($remove_google_fonts_cssfiles[$key])) {
 			$new_cssfile = $remove_google_fonts_cssfiles[$key];
@@ -153,6 +155,13 @@ function remove_google_fonts_css_file_handler($matches)
 		return $str;
 	} elseif (!empty($remove_google_fonts_cssfiles[$key])) {
 		$new_cssfile = $remove_google_fonts_cssfiles[$key];
+		if ( !file_exists(REMOVE_GOOGLE_FONTS_PLUGIN_CACHE_DIR.basename($remove_google_fonts_cssfiles[$key])) ) {
+			global $remove_google_fonts_configs;
+			unset($remove_google_fonts_cssfiles[$key]);
+			$remove_google_fonts_configs['cssfiles'] = $remove_google_fonts_cssfiles;
+			update_option('remove_google_fonts_configs', $remove_google_fonts_configs);
+			return $str;
+		}
 		return str_ireplace($cssfile, $new_cssfile, $str);
 	} else {
 		return $str;
@@ -188,13 +197,21 @@ function remove_google_fonts_cache_cssfile($cssfile, &$remove_google_fonts_cssfi
 			if (preg_match($regexp, $filecontent)) {
 				$filecontent = preg_replace($regexp, '', $filecontent);
 
+				$filecontent = str_ireplace('data:image', '--data:image', $filecontent);
+				$filecontent = preg_replace('/(url\(\s*[\'"]?)([0-9a-zA-Z\.])/i', '$1'.dirname($cssfile_fullpath).'/$2', $filecontent);
+				$filecontent = str_ireplace('--data:image', 'data:image', $filecontent);
+
 				$new_cssfile_path = REMOVE_GOOGLE_FONTS_PLUGIN_CACHE_DIR . $key . '.css';
 				$new_cssfile_url = REMOVE_GOOGLE_FONTS_PLUGIN_CACHE_URL . $key . '.css';
 				$handle = fopen($new_cssfile_path, 'w+');
 				fwrite($handle, $filecontent);
 				fclose($handle);
-
-				$remove_google_fonts_cssfiles[$key] = $new_cssfile_url;
+				
+				if (file_exists($new_cssfile_path)) {
+					$remove_google_fonts_cssfiles[$key] = $new_cssfile_url;
+				} else {
+					unset($remove_google_fonts_cssfiles[$key]);
+				}
 			}
 		}
 	}
