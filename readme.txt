@@ -28,6 +28,10 @@ From version 2.0, CSS files detecting has been added to this plugin to avoid goo
 
 == Changelog ==
 
+= 2.3 =
+* 2014-09-20
+* Add theme 'pinnacle'(use redux framework) compatibility.
+
 = 2.2 =
 * 2014-09-19
 * Remove some redundant codes.
