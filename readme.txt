@@ -28,6 +28,11 @@ From version 2.0, CSS files detecting has been added to this plugin to avoid goo
 
 == Changelog ==
 
+= 2.5 =
+* 2014-10-03
+* Fix a bug in some situation: 'resource huge consumption'.
+* Change file obtaining function from 'file_get_contents' to 'wp_remote_fopen'.
+
 = 2.4 =
 * 2014-09-25
 * Add 'remove_google_fonts_priority' filter, used to change sequencing with 'Useso take over Google' plugin.
