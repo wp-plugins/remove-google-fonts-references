@@ -18,8 +18,8 @@ Reasons for not using Google Fonts might be privacy and security, local developm
 
 Remove Google Fonts References is a very lightweight, it has no settings, just activate it and it works immediately.
 
-Advice: 
-From version 2.0, CSS files detecting has been added to this plugin to avoid google fonts loading inside CSS files. Although it helps stop loading google fonts more thoroughly, it will causes more resource consumption as well, and sometimes may lead to errors. If you don't need CSS files detecting feature, [Remove Google Fonts References Version 1.2](http://www.brunoxu.com/wp-content/uploads/2014/09/remove-google-fonts-references_v1.2.zip) will be a better choice for you.
+Suggestion: 
+From version 2.0, CSS files detecting has been added to this plugin to avoid google fonts loading inside CSS files. Although it helps stop loading google fonts more thoroughly, it will causes more resource consumption at first runing as well, may cause some minor problems(Like space or the host is not unobstructed access to extranet resources will lead to the first response time too long). If you don't need CSS files detecting feature, [Remove Google Fonts References Version 1.2](http://www.brunoxu.com/wp-content/uploads/2014/09/remove-google-fonts-references_v1.2.zip) only contains the simple removal of the full-text search function, maybe a better choice for you.
 
 == Installation ==
 
